@@ -1,1 +1,72 @@
+# Root .gitignore for masterpiece-construction project
+
+# IDE and editor files
+.vscode/
+.idea/
 .qodo
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# Dependency directories
+**/node_modules/
+**/.pnp
+.pnp.*
+**/.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Build directories
+client/.next/
+client/out/
+client/build/
+**/dist/
+**/coverage/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env*
+
+# Firebase
+**/firebaseAdminKey.json
+**/serviceAccountKey.json
+**/.firebase/
+**/firebase-debug.log
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# System files
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Next.js
+next-env.d.ts
+
+# Vercel
+.vercel/
+**/.vercel/
+
+# Server specific
+server/uploads/
+**/*.pem
+
+# Testing
+**/jest.config.js
+**/cypress/
+**/__snapshots__/
