@@ -5,6 +5,37 @@
   --foreground: #171717;
 }
 
+.bg-mp-dark { background-color: var(--color-dark); }
+.bg-mp-gray { background-color: var(--color-gray); }
+.bg-mp-light { background-color: var(--color-light); }
+.bg-mp-muted { background-color: var(--color-muted); }
+.bg-mp-primary { background-color: var(--color-primary); }
+
+.text-mp-dark { color: var(--color-dark); }
+.text-mp-gray { color: var(--color-gray); }
+.text-mp-muted { color: var(--color-muted); }
+.text-mp-primary { color: var(--color-primary); }
+
+.border-mp-muted { border-color: var(--color-muted); }
+.border-mp-primary { border-color: var(--color-primary); }
+
+.to-mp-muted { --tw-gradient-to: var(--color-muted); }
+.from-mp-primary { --tw-gradient-from: var(--color-primary); }
+
+.from-mp-primary {
+  --tw-gradient-from: var(--color-primary);
+  --tw-gradient-to: var(--color-primary);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.to-mp-muted {
+  --tw-gradient-to: var(--color-muted);
+}
+
+.bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, var(--tw-gradient-from), var(--tw-gradient-to));
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
