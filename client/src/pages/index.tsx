@@ -20,7 +20,7 @@ export default function Home() {
               <Image
                 width={60}
                 height={60}
-                src="/logo.webp"
+                src="/logo-black.webp"
                 className="object-contain"
                 alt="Masterpiece Construction Logo"
               />
@@ -78,7 +78,7 @@ export default function Home() {
               <Image
                 width={120}
                 height={40}
-                src="/logo.webp"
+                src="/logo-white.webp"
                 className="object-contain"
                 alt="Masterpiece Construction Logo"
               />

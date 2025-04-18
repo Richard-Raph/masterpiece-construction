@@ -1,19 +1,21 @@
+import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
+import Input from '@/components/Input';
 import { useRouter } from 'next/router';
-import { auth } from '../../utils/firebaseConfig';
+import { auth } from '@/utils/firebaseConfig';
+import { FaArrowCircleRight } from 'react-icons/fa';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function Login() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState<'buyer' | 'vendor' | 'rider'>('buyer');
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            // Role will be set via Firebase Admin in backend (Phase 2)
             router.push('/dashboard');
         } catch (error) {
             console.error(error);
@@ -21,38 +23,81 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-            <form onSubmit={handleLogin} className="bg-white p-8 rounded shadow-md w-96">
-                <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
-                <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as 'buyer' | 'vendor' | 'rider')}
-                    className="mb-4 w-full p-2 border rounded"
-                >
-                    <option value="buyer">Buyer</option>
-                    <option value="vendor">Vendor</option>
-                    <option value="rider">Rider</option>
-                </select>
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mb-4 w-full p-2 border rounded"
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="mb-4 w-full p-2 border rounded"
-                    required
-                />
-                <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-                    Login
-                </button>
-            </form>
-        </div>
+        <section className="min-h-screen bg-mp-light flex flex-col md:flex-row">
+            <div className="md:w-1/2 bg-gradient-to-br from-mp-primary to-mp-muted grid place-items-center p-8 text-white">
+                <div className="max-w-md">
+                    <Image
+                        width={180}
+                        height={60}
+                        src="/logo-white.webp"
+                        className="mb-8 mx-auto"
+                        alt="Masterpiece Construction Logo"
+                    />
+                    <h1 className="text-3xl md:text-4xl font-bold mb-4 text-center">
+                        Welcome Back
+                    </h1>
+                    <p className="text-lg text-center opacity-90">
+                        Sign in to access your construction network
+                    </p>
+                </div>
+            </div>
+
+            <div className="md:w-1/2 flex items-center justify-center p-6">
+                <form onSubmit={handleLogin} className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div className="p-8">
+                        <h2 className="text-2xl font-bold mb-6 text-mp-dark">Sign In</h2>
+
+                        <Input
+                            icon="email"
+                            type="email"
+                            value={email}
+                            label="Email Address"
+                            placeholder="your@email.com"
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+
+                        <Input
+                            icon="password"
+                            type="password"
+                            label="Password"
+                            value={password}
+                            placeholder="••••••••"
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+
+                        <div className="flex justify-between items-center mb-6">
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="remember"
+                                    className="h-4 w-4 text-mp-primary focus:ring-mp-primary border-gray-300 rounded"
+                                />
+                                <label htmlFor="remember" className="ml-2 block text-sm text-mp-gray">
+                                    Remember me
+                                </label>
+                            </div>
+                            <Link href="/auth/forgot-password" className="text-sm text-mp-primary hover:underline">
+                                Forgot password?
+                            </Link>
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="w-full cursor-pointer bg-gradient-to-r from-mp-primary to-mp-muted text-mp-dark font-medium py-3 px-4 rounded-md hover:from-[#e0bb4b]! hover:to-[#f6c834]! transition-all duration-300 flex items-center justify-center"
+                        >
+                            Sign In
+                            <FaArrowCircleRight className="w-4 h-4 ml-2" />
+                        </button>
+
+                        <div className="mt-6 text-center text-sm text-mp-gray">
+                            Don&apos;t have an account?{' '}
+                            <Link href="/auth/register" className="text-mp-primary hover:underline">
+                                Register
+                            </Link>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
     );
 }
