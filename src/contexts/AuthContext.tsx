@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { db, auth } from '@/libs/firebase';
 import { useToaster } from '@/components/Toaster';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirebaseErrorMessage } from '@/libs/firebaseError';
 import { useState, useEffect, useContext, useCallback, createContext } from 'react';
 import { User, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
@@ -65,10 +66,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 showToast('Registration successful! Please login.', 'success');
                 router.push('/auth/login');
             } catch (err) {
-                const error = err as Error;
-                setError(error.message);
-                showToast(error.message, 'error');
-                throw error;
+                const errorMessage = getFirebaseErrorMessage(err);
+                setError(errorMessage);
+                showToast(errorMessage, 'error');
+                throw new Error(errorMessage);
             } finally {
                 setLoading(false);
             }
@@ -92,10 +93,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     router.push('/dashboard');
                 }
             } catch (err) {
-                const error = err as Error;
-                setError(error.message);
-                showToast('Invalid email or password', 'error');
-                throw error;
+                const errorMessage = getFirebaseErrorMessage(err);
+                setError(errorMessage);
+                showToast(errorMessage, 'error');
+                throw new Error(errorMessage);
             } finally {
                 setLoading(false);
             }
@@ -112,9 +113,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             showToast('Logged out successfully', 'success');
             router.push('/auth/login');
         } catch (err) {
-            const error = err as Error;
-            setError(error.message);
-            showToast('Failed to logout', 'error');
+            const errorMessage = getFirebaseErrorMessage(err);
+            setError(errorMessage);
+            showToast(errorMessage, 'error');
         } finally {
             setLoading(false);
         }
