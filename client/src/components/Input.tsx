@@ -1,6 +1,7 @@
 import { FaLock, FaEnvelope } from 'react-icons/fa';
 
 interface InputProps {
+    id: string;
     type: string;
     label: string;
     value: string;
@@ -30,17 +31,18 @@ export default function Input({
 
     return (
         <div className="mb-6">
-            <label className="text-sm font-medium text-mp-dark mb-2 flex items-center">
+            <label htmlFor={type} className="text-sm font-medium text-mp-dark mb-2 flex items-center">
                 {getIcon()}
                 {label}
             </label>
             <input
+                id={type}
                 type={type}
                 value={value}
                 required={true}
                 onChange={onChange}
                 placeholder={placeholder}
-                className="w-full p-3 border outline-none text-mp-gray border-gray-300 rounded-md focus:ring-2 focus:ring-[#f6c834] focus:border-transparent"
+                className="w-full p-3 border outline-none text-mp-gray border-gray-300 rounded-md focus:ring-1 focus:ring-[#f6c834] focus:border-transparent"
             />
         </div>
     );

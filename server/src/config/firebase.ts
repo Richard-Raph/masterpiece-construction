@@ -1,19 +1,21 @@
-import dotenv from 'dotenv';
+// server/src/config/firebase.ts
 import admin from 'firebase-admin';
 
-dotenv.config();
-
-const serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-};
-
+// Initialize Firebase Admin SDK
 if (!admin.apps.length) {
     admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+        credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'), // Handle newline escapes
+        }),
     });
 }
 
-export const auth = admin.auth();
-export const firestore = admin.firestore();
+// Firestore database instance
+const db = admin.firestore();
+
+// Auth instance (for JWT later)
+const auth = admin.auth();
+
+export { db, auth };

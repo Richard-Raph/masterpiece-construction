@@ -3,23 +3,23 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
 import Input from '@/components/Input';
-import { useRouter } from 'next/router';
-import { auth } from '@/utils/firebaseConfig';
+import { useAuth } from '@/contexts/AuthContext';
 import { FaArrowCircleRight } from 'react-icons/fa';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function Login() {
-    const router = useRouter();
+    const { login } = useAuth();
     const [email, setEmail] = useState('');
+    const [error, setError] = useState('');
     const [password, setPassword] = useState('');
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         try {
-            await signInWithEmailAndPassword(auth, email, password);
-            router.push('/dashboard');
-        } catch (error) {
-            console.error(error);
+            await login(email, password);
+        } catch (err) {
+            setError('Invalid email or password');
+            console.error(err);
         }
     };
 
@@ -54,8 +54,9 @@ export default function Login() {
                     <form onSubmit={handleLogin} className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
                         <div className="p-8">
                             <h2 className="text-2xl font-bold mb-6 text-mp-dark">Sign In</h2>
-
+                            {error && <div className="text-red-500 mb-4">{error}</div>}
                             <Input
+                                id="email"
                                 icon="email"
                                 type="email"
                                 value={email}
@@ -65,6 +66,7 @@ export default function Login() {
                             />
 
                             <Input
+                                id="password"
                                 icon="password"
                                 type="password"
                                 label="Password"

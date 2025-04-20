@@ -44,7 +44,7 @@ export default function Home() {
           </div>
         </nav>
 
-        <main className="mx-auto grid content-between text-center h-auto xl:h-[calc(100dvh-370px)]">
+        <main className="mx-auto grid content-between text-center h-auto 2xl:h-[calc(100dvh-370px)]">
           <div className="gap-4 flex flex-col items-center justify-center relative h-54 w-full after:absolute after:-inset-0 after:block after:bg-[rgba(0,0,0,0.5)]">
             <Image
               fill

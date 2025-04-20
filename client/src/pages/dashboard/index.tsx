@@ -10,20 +10,7 @@ export default function Dashboard() {
         if (!user) {
             router.push('/auth/login');
         } else {
-            // Redirect to role-specific dashboard
-            switch (user.role) { // Ensure you've set this in your auth context
-                case 'buyer':
-                    router.push('/dashboard/buyer');
-                    break;
-                case 'vendor':
-                    router.push('/dashboard/vendor');
-                    break;
-                case 'rider':
-                    router.push('/dashboard/rider');
-                    break;
-                default:
-                    router.push('/auth/login');
-            }
+            router.push(`/dashboard/${user.role}`);
         }
     }, [user, router]);
 

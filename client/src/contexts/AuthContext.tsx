@@ -1,102 +1,160 @@
-import { auth } from '@/utils/firebaseConfig';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { useState, useEffect, useContext, createContext } from 'react';
+import { useRouter } from 'next/router';
+import { useState, useEffect, useContext, createContext, useCallback } from 'react';
 
 type UserRole = 'buyer' | 'vendor' | 'rider';
 
+interface UserData {
+    uid: string;
+    email: string;
+    role: UserRole;
+}
+
 interface AuthContextType {
-    user: User | null;
-    role: UserRole | null;
+    user: UserData | null;
     loading: boolean;
-    register: (email: string, password: string, role: UserRole) => Promise<void>;
-    login: (email: string, password: string) => Promise<void>;
+    error: string | null;
     logout: () => Promise<void>;
+    login: (email: string, password: string) => Promise<void>;
+    register: (email: string, password: string, role: UserRole) => Promise<void>;
+    clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
-    role: null,
-    loading: true,
-    register: async () => { },
+    loading: false,
+    error: null,
     login: async () => { },
     logout: async () => { },
+    register: async () => { },
+    clearError: () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [state, setState] = useState<Omit<AuthContextType, 'register' | 'login' | 'logout'>>({
+    const router = useRouter();
+    const [state, setState] = useState<Omit<AuthContextType, 'register' | 'login' | 'logout' | 'clearError'>>({
         user: null,
-        role: null,
-        loading: true,
+        loading: false,
+        error: null,
     });
 
-    const authRequest = async (url: string, body: any) => {
-        const response = await fetch(`/api/auth/${url}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-        });
-        if (!response.ok) throw new Error(await response.text());
-        return response.json();
-    };
-
-    const register = async (email: string, password: string, role: UserRole) => {
-        try {
-            // 1. Create Firebase user
-            const { user } = await createUserWithEmailAndPassword(auth, email, password);
-
-            // 2. Register with backend
-            await authRequest('register', { email, password, role });
-
-            // 3. Get updated token with claims
-            const idToken = await user.getIdToken(true);
-            const { role: userRole } = await authRequest('login', { idToken });
-
-            setState({ user, role: userRole, loading: false });
-        } catch (error) {
-            console.error('Registration failed:', error);
-            throw error;
+    // Token handling functions
+    const getToken = useCallback(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('authToken');
         }
-    };
-
-    const login = async (email: string, password: string) => {
-        try {
-            const { user } = await signInWithEmailAndPassword(auth, email, password);
-            const idToken = await user.getIdToken();
-            const { role } = await authRequest('login', { idToken });
-
-            setState({ user, role, loading: false });
-        } catch (error) {
-            console.error('Login failed:', error);
-            throw error;
-        }
-    };
-
-    const logout = async () => {
-        await auth.signOut();
-        setState({ user: null, role: null, loading: false });
-    };
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try {
-                    const idToken = await user.getIdToken();
-                    const { role } = await authRequest('login', { idToken });
-                    setState({ user, role, loading: false });
-                } catch (error) {
-                    console.error('Session validation failed:', error);
-                    setState({ user: null, role: null, loading: false });
-                }
-            } else {
-                setState({ user: null, role: null, loading: false });
-            }
-        });
-
-        return unsubscribe;
+        return null;
     }, []);
 
+    const setToken = useCallback((token: string) => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('authToken', token);
+        }
+    }, []);
+
+    const clearToken = useCallback(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('authToken');
+        }
+    }, []);
+
+    const clearError = useCallback(() => {
+        setState(prev => ({ ...prev, error: null }));
+    }, []);
+
+    // API request handler
+    const apiRequest = useCallback(async (endpoint: string, method: string, body?: unknown) => {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        const token = getToken();
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Request failed');
+        }
+
+        return response.json();
+    }, [getToken]);
+
+    // Auth actions
+    const register = useCallback(async (email: string, password: string, role: UserRole) => {
+        setState(prev => ({ ...prev, loading: true, error: null }));
+        try {
+            const data = await apiRequest('register', 'POST', { email, password, role });
+            setToken(data.token);
+            setState({ user: data.user, loading: false, error: null });
+            router.push('/dashboard');
+        } catch (error: never) {
+            setState(prev => ({ ...prev, loading: false, error: error.message }));
+            throw error;
+        }
+    }, [apiRequest, router, setToken]);
+
+    const login = useCallback(async (email: string, password: string) => {
+        setState(prev => ({ ...prev, loading: true, error: null }));
+        try {
+            const data = await apiRequest('login', 'POST', { email, password });
+            setToken(data.token);
+            setState({ user: data.user, loading: false, error: null });
+            router.push('/dashboard');
+        } catch (error: any) {
+            setState(prev => ({ ...prev, loading: false, error: error.message }));
+            throw error;
+        }
+    }, [apiRequest, router, setToken]);
+
+    const logout = useCallback(async () => {
+        setState(prev => ({ ...prev, loading: true }));
+        try {
+            await apiRequest('logout', 'POST');
+            clearToken();
+            setState({ user: null, loading: false, error: null });
+            router.push('/auth/login');
+        } catch (error: unknown) {
+            setState(prev => ({ ...prev, loading: false, error: error.message }));
+            throw error;
+        }
+    }, [apiRequest, clearToken, router]);
+
+    // Initial auth check
+    const checkAuth = useCallback(async () => {
+        setState(prev => ({ ...prev, loading: true }));
+        try {
+            const token = getToken();
+            if (!token) {
+                setState(prev => ({ ...prev, loading: false }));
+                return;
+            }
+
+            const data = await apiRequest('user-info', 'GET');
+            setState({ user: data, loading: false, error: null });
+        } catch (error) {
+            clearToken();
+            console.error(error);
+            setState({ user: null, loading: false, error: null });
+        }
+    }, [apiRequest, clearToken, getToken]);
+
+    useEffect(() => {
+        checkAuth();
+    }, [checkAuth]);
+
     return (
-        <AuthContext.Provider value={{ ...state, register, login, logout }}>
+        <AuthContext.Provider value={{ 
+            login, 
+            logout,
+            ...state, 
+            register, 
+            clearError
+        }}>
             {children}
         </AuthContext.Provider>
     );

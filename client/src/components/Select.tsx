@@ -19,8 +19,8 @@ export default function Select({ role, setRole }: SelectProps) {
                         type="button"
                         onClick={() => setRole(r as 'buyer' | 'vendor' | 'rider')}
                         className={`py-2 px-3 cursor-pointer rounded-md border transition-colors ${role === r
-                                ? 'border-mp-primary bg-mp-primary/10 text-mp-primary'
-                                : 'border-gray-300 hover:border-mp-muted'
+                                ? 'border-mp-primary text-mp-primary'
+                                : 'border-gray-300 hover:border-[#e0bb4b]'
                             }`}
                     >
                         {r.charAt(0).toUpperCase() + r.slice(1)}

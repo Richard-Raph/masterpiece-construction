@@ -5,23 +5,26 @@ import { useState } from 'react';
 import Input from '@/components/Input';
 import { useRouter } from 'next/router';
 import Select from '@/components/Select';
-import { auth } from '@/utils/firebaseConfig';
+import { useAuth } from '@/contexts/AuthContext';
 import { FaArrowCircleRight } from 'react-icons/fa';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function Register() {
     const router = useRouter();
+    const { register } = useAuth();
     const [email, setEmail] = useState('');
+    const [error, setError] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState<'buyer' | 'vendor' | 'rider'>('buyer');
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
+            await register(email, password, role);
             router.push('/dashboard');
-        } catch (error) {
-            console.error(error);
+        } catch (err) {
+            setError('Registration failed. Please try again.');
+            console.error(err);
         }
     };
 
@@ -61,10 +64,11 @@ export default function Register() {
                         <div className="p-8">
                             <h2 className="text-2xl font-bold mb-1 text-mp-dark">Create Account</h2>
                             <p className="text-mp-gray mb-6">Select your role to get started</p>
-
+                            {error && <div className="text-red-500 mb-4">{error}</div>}
                             <Select role={role} setRole={setRole} />
 
                             <Input
+                                id="email"
                                 icon="email"
                                 type="email"
                                 value={email}
@@ -74,6 +78,7 @@ export default function Register() {
                             />
 
                             <Input
+                                id="password"
                                 icon="password"
                                 type="password"
                                 label="Password"

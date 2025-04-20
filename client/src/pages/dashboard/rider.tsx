@@ -1,11 +1,18 @@
-import ProtectedRoute from '../../components/ProtectedRoute';
+import { useAuth } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function Rider() {
+export default function VendorDashboard() {
+    const { user } = useAuth();
+
     return (
         <ProtectedRoute allowedRoles={['rider']}>
-            <div className="p-8">
-                <h1 className="text-2xl font-bold">Welcome Rider!</h1>
-                <p className="mt-2">View delivery schedule.</p>
+            <div className="container mx-auto p-4">
+                <h1 className="text-2xl font-bold mb-4">riders Dashboard</h1>
+                <p className="mb-6">Welcome, {user?.email}</p>
+
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h2 className="text-xl font-semibold mb-4">Deliver Pro</h2>
+                </div>
             </div>
         </ProtectedRoute>
     );
