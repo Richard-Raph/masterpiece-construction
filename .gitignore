@@ -20,9 +20,9 @@
 !.yarn/versions
 
 # Build directories
-client/.next/
-client/out/
-client/build/
+/.next/
+/out/
+/build/
 **/dist/
 **/coverage/
 
@@ -62,9 +62,9 @@ next-env.d.ts
 .vercel/
 **/.vercel/
 
-# Server specific
-server/uploads/
-**/*.pem
+# ESLint
+.eslintcache
+.prettiercache
 
 # Testing
 **/jest.config.js

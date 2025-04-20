@@ -22,27 +22,44 @@ export default function Toaster() {
     }, []);
 
     const showToast = useCallback((message: string, type: ToastType = 'success') => {
-        const id = Math.random().toString(36).substring(2, 9);
-        setToasts((prev) => [...prev, { id, message, type }]);
+        setToasts((prev) => {
+            // Check if the same message already exists in the toasts
+            const existingToast = prev.find(toast => toast.message === message);
 
+            // If exists, replace it with a new one (with new timer)
+            if (existingToast) {
+                return prev.map(toast =>
+                    toast.message === message
+                        ? { ...toast, id: Math.random().toString(36).substring(2, 9) }
+                        : toast
+                );
+            }
+
+            // Otherwise add new toast
+            return [...prev, {
+                id: Math.random().toString(36).substring(2, 9),
+                message,
+                type
+            }];
+        });
+
+        // Auto-dismiss after 5 seconds
         const timer = setTimeout(() => {
-            dismissToast(id);
+            setToasts(prev => prev.filter(toast => toast.message !== message));
         }, 5000);
 
         return () => clearTimeout(timer);
-    }, [dismissToast]);
+    }, []);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        // Make toast function available globally
         window.showToast = showToast;
 
         return () => {
-            // Safe cleanup with optional chaining
             delete window.showToast;
         };
-    }, [showToast]); // Added showToast to dependencies
+    }, [showToast]);
 
     const getToastConfig = (type: ToastType) => {
         const baseClasses = 'flex items-center p-4 rounded-lg shadow-lg border max-w-xs md:max-w-sm';
