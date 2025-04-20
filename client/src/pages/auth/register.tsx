@@ -1,30 +1,34 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
 import Input from '@/components/Input';
-import { useRouter } from 'next/router';
 import Select from '@/components/Select';
-import { useAuth } from '@/contexts/AuthContext';
+import Loader from '@/components/Loader';
+import { useState, FormEvent } from 'react';
+import { useToaster } from '@/components/Toaster';
 import { FaArrowCircleRight } from 'react-icons/fa';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
 
 export default function Register() {
-    const router = useRouter();
-    const { register } = useAuth();
+    const { showToast } = useToaster();
     const [email, setEmail] = useState('');
-    const [error, setError] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState<'buyer' | 'vendor' | 'rider'>('buyer');
+    const [localError, setLocalError] = useState('');
+    const [role, setRole] = useState<UserRole>('buyer');
+    const { loading, register, clearError, error: authError } = useAuth();
 
-    const handleRegister = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        setError('');
+        clearError();
+        setLocalError('');
+
         try {
             await register(email, password, role);
-            router.push('/dashboard');
+            showToast('Registration successful! Please login.', 'success');
         } catch (err) {
-            setError('Registration failed. Please try again.');
-            console.error(err);
+            const error = err instanceof Error ? err.message : 'Registration failed';
+            setLocalError(error);
+            showToast(error, 'error');
         }
     };
 
@@ -32,13 +36,15 @@ export default function Register() {
         <>
             <Head>
                 <title>Register | Masterpiece Construction</title>
-                <meta name="description" content="Platform for buyers, vendors, and riders in the construction industry" />
+                <meta name="description" content="Create your account" />
             </Head>
+
             <section className="min-h-screen bg-mp-light flex flex-col md:flex-row">
                 <div className="md:w-1/2 bg-gradient-to-br from-mp-primary to-mp-muted grid place-items-center p-8 text-white">
                     <div className="max-w-md">
-                        <Link href="/">
+                        <Link href="/" aria-label="Home">
                             <Image
+                                priority
                                 width={180}
                                 height={60}
                                 src="/logo-white.webp"
@@ -60,11 +66,21 @@ export default function Register() {
                 </div>
 
                 <div className="md:w-1/2 flex items-center justify-center p-6">
-                    <form onSubmit={handleRegister} className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
+                    <form
+                        noValidate
+                        onSubmit={handleSubmit}
+                        className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden"
+                    >
                         <div className="p-8">
                             <h2 className="text-2xl font-bold mb-1 text-mp-dark">Create Account</h2>
                             <p className="text-mp-gray mb-6">Select your role to get started</p>
-                            {error && <div className="text-red-500 mb-4">{error}</div>}
+
+                            {(authError || localError) && (
+                                <div className="text-red-500 mb-4 text-center">
+                                    {authError || localError}
+                                </div>
+                            )}
+
                             <Select role={role} setRole={setRole} />
 
                             <Input
@@ -89,15 +105,27 @@ export default function Register() {
 
                             <button
                                 type="submit"
+                                disabled={loading}
+                                aria-label="Continue registration"
                                 className="w-full cursor-pointer bg-gradient-to-r from-mp-primary to-mp-muted text-mp-dark font-medium py-3 px-4 rounded-md hover:from-[#e0bb4b]! hover:to-[#f6c834]! transition-all duration-300 flex items-center justify-center"
                             >
-                                Continue
-                                <FaArrowCircleRight className="w-4 h-4 ml-2" />
+                                {loading ? (
+                                    <Loader size="sm" text="" className="inline" />
+                                ) : (
+                                    <>
+                                        Continue
+                                        <FaArrowCircleRight className="w-4 h-4 ml-2" />
+                                    </>
+                                )}
                             </button>
 
                             <div className="mt-6 text-center text-sm text-mp-gray">
                                 Already have an account?{' '}
-                                <Link href="/auth/login" className="text-mp-primary hover:underline">
+                                <Link
+                                    href="/auth/login"
+                                    aria-label="Login"
+                                    className="text-mp-primary hover:underline"
+                                >
                                     Sign in
                                 </Link>
                             </div>

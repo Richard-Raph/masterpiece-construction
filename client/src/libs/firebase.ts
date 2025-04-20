@@ -1,8 +1,7 @@
-import { getAuth } from "firebase/auth";
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { Auth, getAuth } from 'firebase/auth';
+import { Firestore, getFirestore } from 'firebase/firestore';
+import { getApps, FirebaseApp, initializeApp } from 'firebase/app';
 
-// Explicitly declare the config object first
 const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,11 +11,14 @@ const firebaseConfig = {
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
 };
 
-console.table(firebaseConfig);
+let app: FirebaseApp;
+let db: Firestore;
+let auth: Auth;
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+if (typeof window !== 'undefined' && !getApps().length) {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+}
 
 export { db, auth };

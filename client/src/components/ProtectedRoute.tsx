@@ -1,21 +1,26 @@
+import Loader from './Loader';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
+
+interface ProtectedRouteProps {
+  allowedRoles: UserRole[];
+  children: React.ReactNode;
+}
 
 export default function ProtectedRoute({
-  children,
   allowedRoles,
-}: {
-  allowedRoles: string[];
-  children: React.ReactNode;
-}) {
+  children
+}: ProtectedRouteProps) {
   const router = useRouter();
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !router.isReady) return;
 
-    if (!user || !allowedRoles.includes(user.role)) {
+    // Type guard for user role check
+    const hasAccess = user && allowedRoles.includes(user.role);
+    if (!hasAccess) {
       router.push('/auth/login');
     }
   }, [user, loading, router, allowedRoles]);
@@ -23,13 +28,13 @@ export default function ProtectedRoute({
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <p>Loading authentication...</p>
+        <Loader text="Authenticating..." size="lg" />
       </div>
     );
   }
 
   if (!user || !allowedRoles.includes(user.role)) {
-    return null;
+    return null; // or redirect to login
   }
 
   return <>{children}</>;

@@ -1,9 +1,12 @@
 import { FaUserShield } from 'react-icons/fa';
+import { UserRole } from '@/contexts/AuthContext';
 
 interface SelectProps {
-    role: string;
-    setRole: (role: 'buyer' | 'vendor' | 'rider') => void;
+    role: UserRole;
+    setRole: (role: UserRole) => void;
 }
+
+const roleOptions: UserRole[] = ['buyer', 'vendor', 'rider'];
 
 export default function Select({ role, setRole }: SelectProps) {
     return (
@@ -13,17 +16,18 @@ export default function Select({ role, setRole }: SelectProps) {
                 I am a...
             </label>
             <div className="grid grid-cols-3 gap-3">
-                {['buyer', 'vendor', 'rider'].map((r) => (
+                {roleOptions.map((option) => (
                     <button
-                        key={r}
+                        key={option}
                         type="button"
-                        onClick={() => setRole(r as 'buyer' | 'vendor' | 'rider')}
-                        className={`py-2 px-3 cursor-pointer rounded-md border transition-colors ${role === r
-                                ? 'border-mp-primary text-mp-primary'
-                                : 'border-gray-300 hover:border-[#e0bb4b]'
+                        onClick={() => setRole(option)}
+                        aria-label={`Select ${option} role`}
+                        className={`py-2 px-3 rounded-md cursor-pointer border transition-colors ${role === option
+                            ? 'border-mp-primary text-mp-primary'
+                            : 'border-gray-300 hover:border-mp-primary'
                             }`}
                     >
-                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                        {option.charAt(0).toUpperCase() + option.slice(1)}
                     </button>
                 ))}
             </div>
