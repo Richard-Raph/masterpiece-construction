@@ -1,7 +1,7 @@
-import Loader from '@/components/Loader';
-import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/router';
+import Loader from '@/components/Loader';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Dashboard() {
     const { user } = useAuth();

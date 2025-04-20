@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { FaTruck, FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
 
-export default function RiderDashboard() {
+export default function Rider() {
     const { user } = useAuth();
 
     // Mock delivery data

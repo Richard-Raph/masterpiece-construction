@@ -9,7 +9,7 @@ import { useToaster } from '@/components/Toaster';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { FaBoxOpen, FaPlus, FaChartLine } from 'react-icons/fa';
 
-export default function VendorDashboard() {
+export default function Vendor() {
     const { user } = useAuth();
     const { showToast } = useToaster();
     const [error, setError] = useState('');
@@ -117,35 +117,35 @@ export default function VendorDashboard() {
                                 <div>
                                     <label className="block text-sm font-medium text-mp-dark mb-1">Product Name</label>
                                     <input
+                                        required
                                         type="text"
                                         value={productName}
                                         onChange={(e) => setProductName(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-mp-primary focus:border-transparent"
-                                        required
+                                        className="w-full p-3 rounded-md border outline-none text-mp-gray border-gray-300 rounded-md focus:ring-1 focus:ring-[#f6c834] focus:border-transparent"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-mp-dark mb-1">Price ($)</label>
                                     <input
+                                        min="0"
+                                        required
+                                        step="0.01"
                                         type="number"
                                         value={productPrice}
                                         onChange={(e) => setProductPrice(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-mp-primary focus:border-transparent"
-                                        step="0.01"
-                                        min="0"
-                                        required
+                                        className="w-full p-3 rounded-md border outline-none text-mp-gray border-gray-300 rounded-md focus:ring-1 focus:ring-[#f6c834] focus:border-transparent"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-mp-dark mb-1">Description</label>
                                     <textarea
-                                        value={productDescription}
-                                        onChange={(e) => setProductDescription(e.target.value)}
-                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-mp-primary focus:border-transparent"
                                         rows={3}
                                         required
+                                        value={productDescription}
+                                        onChange={(e) => setProductDescription(e.target.value)}
+                                        className="w-full p-3 rounded-md border outline-none text-mp-gray border-gray-300 rounded-md focus:ring-1 focus:ring-[#f6c834] focus:border-transparent"
                                     />
                                 </div>
 
@@ -153,7 +153,7 @@ export default function VendorDashboard() {
                                 {success && <div className="text-green-500 text-sm">{success}</div>}
 
                                 {isLoading && (
-                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                    <div className="fixed h-screen inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                                         <Loader text="Creating product..." size="lg" />
                                     </div>
                                 )}

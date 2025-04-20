@@ -1,5 +1,6 @@
 import { getAuth } from 'firebase-admin/auth';
-import { cert, initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
 
 const firebaseAdminConfig = {
     credential: cert({
@@ -9,9 +10,17 @@ const firebaseAdminConfig = {
     }),
 };
 
-const app = initializeApp(firebaseAdminConfig);
+const app = getApps().length === 0 ? initializeApp(firebaseAdminConfig) : getApps()[0];
 const adminAuth = getAuth(app);
+const adminDb = getFirestore(app);
 
-export const verifyIdToken = (token: string) => {
-    return adminAuth.verifyIdToken(token);
+export { adminAuth, adminDb };
+
+export const verifyIdToken = async (token: string) => {
+    try {
+        return await adminAuth.verifyIdToken(token);
+    } catch (error) {
+        console.error('Error verifying token:', error);
+        throw new Error('Invalid or expired token');
+    }
 };

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { FaShoppingCart, FaSearch, FaStore } from 'react-icons/fa';
 
-export default function BuyerDashboard() {
+export default function Buyer() {
     const { user } = useAuth();
 
     return (
