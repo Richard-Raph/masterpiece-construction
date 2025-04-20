@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Masterpiece Construction | Connect Your Construction Network</title>
+        <title>Masterpiece Construction | Build Your Construction Network</title>
         <meta name="description" content="Platform for buyers, vendors, and riders in the construction industry" />
       </Head>
 
@@ -18,8 +18,8 @@ export default function Home() {
           <div className="max-w-7xl mx-auto h-[70px] px-4 flex justify-between items-center">
             <div className="flex items-center">
               <Image
-                width={60}
-                height={60}
+                width={50}
+                height={50}
                 src="/logo-black.webp"
                 className="object-contain"
                 alt="Masterpiece Construction Logo"
