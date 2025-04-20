@@ -1,18 +1,17 @@
-// server/src/models/User.ts
 import { db } from '../config/firebase';
 import { DocumentReference } from 'firebase-admin/firestore';
 
-// User roles (matches your requirements)
+// User roles
 export type UserRole = 'buyer' | 'vendor' | 'rider';
 
 // User interface
 export interface User {
     id?: string; // Added when fetched from Firestore
     email: string;
-    password?: string; // Only for signup (hashed later)
     role: UserRole;
     createdAt: Date;
     updatedAt: Date;
+    password?: string; // Only for signup (hashed later)
 }
 
 // Firestore collection name

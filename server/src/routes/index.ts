@@ -1,4 +1,3 @@
-// server/src/routes/index.ts
 import Auth from './Auth';
 import Buyer from './Buyer';
 import Rider from './Rider';

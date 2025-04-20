@@ -1,4 +1,3 @@
-// server/src/routes/buyerRoutes.ts
 import { Router } from 'express';
 import { authenticate, isBuyer } from '../middleware/auth';
 import { viewAvailableProducts } from '../controllers/Buyer';

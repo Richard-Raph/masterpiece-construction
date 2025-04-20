@@ -1,4 +1,3 @@
-// server/src/routes/vendorRoutes.ts
 import { Router } from 'express';
 import { authenticate, isVendor } from '../middleware/auth';
 import { createProductListing, getMyProducts } from '../controllers/Vendor';

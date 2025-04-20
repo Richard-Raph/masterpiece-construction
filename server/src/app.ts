@@ -1,4 +1,3 @@
-// server/src/app.ts
 import 'dotenv/config';
 import cors from 'cors';
 import router from './routes';

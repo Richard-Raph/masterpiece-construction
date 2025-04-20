@@ -1,4 +1,3 @@
-// server/src/controllers/authController.ts
 import { auth } from '../config/firebase';
 import { Request, Response } from 'express';
 import { UserRole, createUser, getUserByEmail } from '../models/User';
@@ -7,8 +6,8 @@ export const register = async (req: Request, res: Response) => {
     try {
         const { email, password, role } = req.body as {
             email: string;
-            password: string;
             role: UserRole;
+            password: string;
         };
 
         // Validate role
@@ -32,8 +31,8 @@ export const register = async (req: Request, res: Response) => {
 
         // Create user in Firestore
         await createUser({
-            email,
             role,
+            email,
             password: '[HASHED]', // In production, hash before storing
             // createdAt: new Date(),
             // updatedAt: new Date(),

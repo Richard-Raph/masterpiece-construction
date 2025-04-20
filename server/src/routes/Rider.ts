@@ -1,4 +1,3 @@
-// server/src/routes/riderRoutes.ts
 import { Router } from 'express';
 import { authenticate, isRider } from '../middleware/auth';
 import { viewAssignedDeliveries } from '../controllers/Rider';

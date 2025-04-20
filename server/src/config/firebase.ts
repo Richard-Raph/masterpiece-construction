@@ -1,4 +1,3 @@
-// server/src/config/firebase.ts
 import admin from 'firebase-admin';
 
 // Initialize Firebase Admin SDK
@@ -15,7 +14,7 @@ if (!admin.apps.length) {
 // Firestore database instance
 const db = admin.firestore();
 
-// Auth instance (for JWT later)
+// Auth instance
 const auth = admin.auth();
 
 export { db, auth };

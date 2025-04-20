@@ -1,4 +1,3 @@
-// server/src/middlewares/auth.ts
 import { auth } from '../config/firebase';
 import { User, getUserById } from '../models/User';
 import { Request, Response, NextFunction } from 'express';

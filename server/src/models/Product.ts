@@ -1,4 +1,3 @@
-// server/src/models/Product.ts
 import { db } from '../config/firebase';
 import { DocumentReference } from 'firebase-admin/firestore';
 
@@ -7,9 +6,9 @@ export interface Product {
     id?: string;
     name: string;
     price: number;
-    vendorId: string; // Reference to Vendor's user ID
     createdAt: Date;
     updatedAt: Date;
+    vendorId: string; // Reference to Vendor's user ID
 }
 
 const COLLECTION_NAME = 'products';

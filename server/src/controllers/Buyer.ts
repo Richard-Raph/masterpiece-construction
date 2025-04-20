@@ -1,4 +1,3 @@
-// server/src/controllers/buyerController.ts
 import { Request, Response } from 'express';
 
 export const viewAvailableProducts = async (req: Request, res: Response) => {

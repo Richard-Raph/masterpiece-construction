@@ -1,4 +1,3 @@
-// server/src/controllers/riderController.ts
 import { Request, Response } from 'express';
 
 export const viewAssignedDeliveries = async (req: Request, res: Response) => {

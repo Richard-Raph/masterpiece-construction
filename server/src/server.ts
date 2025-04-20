@@ -1,4 +1,3 @@
-// server/src/server.ts
 import app from './app';
 import 'dotenv/config'; // Ensure env variables are loaded
 

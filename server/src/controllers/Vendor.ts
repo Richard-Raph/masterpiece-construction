@@ -1,4 +1,3 @@
-// server/src/controllers/vendorController.ts
 import { Request, Response } from 'express';
 import { createProduct, getProductsByVendor } from '../models/Product';
 
