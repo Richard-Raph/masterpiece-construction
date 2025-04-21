@@ -1,9 +1,14 @@
 export const getFirebaseErrorMessage = (error: unknown): string => {
-    const err = error as { code?: string; message?: string };
+    const err = error as { code?: string | number; message?: string; details?: string };
 
-    if (!err.code) return err.message || 'An unknown error occurred';
+    if (!err.code) {
+        return err.message || err.details || 'An unknown error occurred';
+    }
 
-    switch (err.code) {
+    // Convert numeric codes to string equivalents for consistency
+    const code = typeof err.code === 'number' ? err.code.toString() : err.code;
+
+    switch (code) {
         // Authentication Errors
         case 'auth/email-already-in-use':
             return 'This email is already registered. Please use a different email or login.';
@@ -45,6 +50,9 @@ export const getFirebaseErrorMessage = (error: unknown): string => {
             return 'Service is unavailable. Please check your connection.';
         case 'deadline-exceeded':
             return 'The operation timed out. Please try again.';
+        case '16': // UNAUTHENTICATED
+        case 'unauthenticated':
+            return 'Authentication failed. Please check your credentials or login again.';
 
         // General Errors
         case 'auth/network-request-failed':
@@ -62,6 +70,6 @@ export const getFirebaseErrorMessage = (error: unknown): string => {
 
         default:
             // For unhandled error codes, return a generic message with the code for debugging
-            return `An error occurred (${err.code}). Please try again.`;
+            return `An error occurred (${code}). Please try again.`;
     }
 };

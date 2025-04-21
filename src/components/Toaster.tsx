@@ -4,8 +4,8 @@ import { FaCheckCircle, FaExclamationCircle, FaExclamationTriangle, FaTimes } fr
 type ToastType = 'success' | 'error' | 'warning';
 interface ToastMessage {
     id: string;
-    message: string;
     type: ToastType;
+    message: string;
 }
 
 declare global {
@@ -98,16 +98,12 @@ export default function Toaster() {
                         className={className}
                     >
                         {icon}
-                        <div className="flex-1 text-sm">
-                            {toast.message}
-                        </div>
+                        <div className="flex-1 text-sm">{toast.message}</div>
                         <button
                             aria-label="Dismiss toast"
                             onClick={() => dismissToast(toast.id)}
                             className="cursor-pointer ml-3 text-gray-500 hover:text-gray-700 focus:outline-none"
-                        >
-                            <FaTimes />
-                        </button>
+                        ><FaTimes /></button>
                     </div>
                 );
             })}

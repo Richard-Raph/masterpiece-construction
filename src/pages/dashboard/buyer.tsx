@@ -21,7 +21,7 @@ export default function Buyer() {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold text-mp-dark">Welcome Buyer</h1>
-                            <p className="text-mp-gray">{getTime()}, {user?.email}</p>
+                            <p className="text-mp-gray">{getTime()}, {user?.name?.split(' ')[0].toLowerCase().replace(/^\w/, c => c.toUpperCase())}</p>
                         </div>
                         <div className="mt-4 md:mt-0">
                             <button className="cursor-pointer bg-mp-muted text-mp-dark px-4 py-2 rounded-md hover:bg-[#f6c834]! transition-colors">

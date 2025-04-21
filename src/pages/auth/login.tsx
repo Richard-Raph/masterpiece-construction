@@ -76,6 +76,7 @@ export default function Login() {
                             <Input
                                 id="email"
                                 icon="email"
+                                name="email"
                                 type="email"
                                 value={email}
                                 label="Email Address"
@@ -86,6 +87,7 @@ export default function Login() {
                             <Input
                                 id="password"
                                 icon="password"
+                                name="password"
                                 type="password"
                                 label="Password"
                                 value={password}

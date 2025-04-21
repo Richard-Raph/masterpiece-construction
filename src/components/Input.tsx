@@ -1,32 +1,44 @@
-import { FaLock, FaEnvelope } from 'react-icons/fa';
+import { FaLock, FaEnvelope, FaTag, FaDollarSign, FaFileAlt, FaUser } from 'react-icons/fa';
 
 interface InputProps {
     id: string;
-    type: string;
+    name: string;
+    type?: string;
     label: string;
     value: string;
-    required?: boolean;
+    rows?: number;
+    textarea?: boolean;
     placeholder: string;
-    icon?: 'email' | 'password';
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    icon?: 'text' | 'email' | 'password' | 'productName' | 'productPrice' | 'productDescription';
 }
 
 export default function Input({
     id,
     icon,
-    type,
+    name,
     label,
     value,
+    rows = 3,
     onChange,
     placeholder,
-    required = true,
+    type = 'text',
+    textarea = false,
 }: InputProps) {
     const Icon = () => {
         switch (icon) {
+            case 'productPrice':
+                return <FaDollarSign className="w-4 h-4 mr-2 text-mp-primary" />;
             case 'email':
-                return <FaEnvelope className="w-5 h-5 mr-2 text-mp-primary" />;
+                return <FaEnvelope className="w-4 h-4 mr-2 text-mp-primary" />;
+            case 'productDescription':
+                return <FaFileAlt className="w-4 h-4 mr-2 text-mp-primary" />;
             case 'password':
-                return <FaLock className="w-5 h-5 mr-2 text-mp-primary" />;
+                return <FaLock className="w-4 h-4 mr-2 text-mp-primary" />;
+            case 'text':
+                return <FaUser className="w-4 h-4 mr-2 text-mp-primary" />;
+            case 'productName':
+                return <FaTag className="w-4 h-4 mr-2 text-mp-primary" />;
             default:
                 return null;
         }
@@ -38,15 +50,29 @@ export default function Input({
                 <Icon />
                 {label}
             </label>
-            <input
-                id={id}
-                type={type}
-                value={value}
-                onChange={onChange}
-                required={required}
-                placeholder={placeholder}
-                className="w-full p-3 border outline-none text-mp-gray border-gray-300 rounded-md focus:ring-1 focus:ring-[#f6c834] focus:border-transparent"
-            />
+            {textarea ? (
+                <textarea
+                    id={id}
+                    required
+                    name={name}
+                    rows={rows}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    className="w-full p-3 border outline-none text-mp-gray border-gray-300 rounded-md focus:ring-1 focus:ring-[#f6c834] focus:border-transparent"
+                />
+            ) : (
+                <input
+                    id={id}
+                    required
+                    name={name}
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    className="w-full p-3 border outline-none text-mp-gray border-gray-300 rounded-md focus:ring-1 focus:ring-[#f6c834] focus:border-transparent"
+                />
+            )}
         </div>
     );
 }

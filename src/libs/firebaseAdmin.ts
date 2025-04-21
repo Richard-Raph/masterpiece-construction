@@ -2,6 +2,10 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 
+if (!process.env.FIREBASE_ADMIN_PROJECT_ID) {
+    throw new Error('Missing Firebase admin configuration');
+}
+
 const firebaseAdminConfig = {
     credential: cert({
         clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
@@ -16,11 +20,6 @@ const adminDb = getFirestore(app);
 
 export { adminAuth, adminDb };
 
-export const verifyIdToken = async (token: string) => {
-    try {
-        return await adminAuth.verifyIdToken(token);
-    } catch (error) {
-        console.error('Error verifying token:', error);
-        throw new Error('Invalid or expired token');
-    }
+export const verifyFirebaseToken = (token: string) => {
+    return adminAuth.verifyIdToken(token);
 };

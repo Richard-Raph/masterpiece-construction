@@ -11,8 +11,8 @@ export default function Rider() {
     // Mock delivery data
     const deliveries = [
         { id: 1, from: 'Vendor A', to: 'Construction Site X', time: '10:00 AM', status: 'pending' },
-        { id: 2, from: 'Vendor B', to: 'Construction Site Y', time: '2:00 PM', status: 'in-progress' },
-        { id: 3, from: 'Vendor C', to: 'Construction Site Z', time: '4:30 PM', status: 'scheduled' },
+        { id: 2, from: 'Vendor C', to: 'Construction Site Z', time: '4:30 PM', status: 'scheduled' },
+        { id: 3, from: 'Vendor B', to: 'Construction Site Y', time: '2:00 PM', status: 'in-progress' },
     ];
 
     return (
@@ -28,7 +28,7 @@ export default function Rider() {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold text-mp-dark">Welcome Rider</h1>
-                            <p className="text-mp-gray">{getTime()}, {user?.email}</p>
+                            <p className="text-mp-gray">{getTime()}, {user?.name?.split(' ')[0].toLowerCase().replace(/^\w/, c => c.toUpperCase())}</p>
                         </div>
                         <div className="mt-4 md:mt-0">
                             <button className="bg-mp-muted cursor-pointer text-mp-dark px-4 py-2 rounded-md hover:bg-[#f6c834]! transition-colors">

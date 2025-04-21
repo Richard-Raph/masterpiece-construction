@@ -3,13 +3,14 @@ import { db, auth } from '@/libs/firebase';
 import { useToaster } from '@/components/Toaster';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { getFirebaseErrorMessage } from '@/libs/firebaseError';
-import { useState, useEffect, useContext, useCallback, createContext } from 'react';
+import { useState, useEffect, useContext, useCallback, createContext, ReactNode } from 'react';
 import { User, signOut, getIdToken, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
 export type UserRole = 'buyer' | 'vendor' | 'rider';
 
 interface UserData {
     uid: string;
+    name?: string;
     email: string;
     role: UserRole;
 }
@@ -17,47 +18,57 @@ interface UserData {
 interface AuthContextType {
     loading: boolean;
     error: string | null;
-    user: UserData | null;
     token: string | null;
+    user: UserData | null;
     clearError: () => void;
     logout: () => Promise<void>;
+    getCombinedToken: () => Promise<string>;
     login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string, role: UserRole) => Promise<void>;
+    register: (email: string, password: string, role: UserRole, name?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const router = useRouter();
     const { showToast } = useToaster();
-    const [loading, setLoading] = useState(true); // Start with true for initial check
+    const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<UserData | null>(null);
-    const [token, setTokenState] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [token, setTokenState] = useState<string | null>(null);
 
-    // Handle user data from Firebase User
     const formatUser = async (firebaseUser: User): Promise<UserData | null> => {
         if (!firebaseUser?.email) return null;
 
         try {
             const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-            if (!userDoc.exists()) return null;
+            if (!userDoc.exists()) {
+                console.warn(`User document not found for UID: ${firebaseUser.uid}`);
+                return null;
+            }
+
+            const data = userDoc.data();
+            if (!data.role || !['buyer', 'vendor', 'rider'].includes(data.role)) {
+                console.warn(`Invalid or missing role for UID: ${firebaseUser.uid}`);
+                return null;
+            }
 
             return {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
-                role: userDoc.data().role as UserRole
+                role: data.role as UserRole,
+                name: data.name || undefined,
             };
         } catch (err) {
             console.error('Error formatting user:', err);
+            setError(getFirebaseErrorMessage(err));
             return null;
         }
     };
 
-    // Token management
-    const setToken = async (user: User) => {
+    const setToken = async (user: User): Promise<string | null> => {
         try {
-            const token = await getIdToken(user);
+            const token = await getIdToken(user, true);
             if (typeof window !== 'undefined') {
                 localStorage.setItem('firebaseToken', token);
             }
@@ -65,7 +76,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return token;
         } catch (err) {
             console.error('Error getting token:', err);
-            throw err;
+            setError(getFirebaseErrorMessage(err));
+            return null;
         }
     };
 
@@ -76,22 +88,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setTokenState(null);
     };
 
-    // Register new user
+    const getCombinedToken = async (): Promise<string> => {
+        if (!auth.currentUser) {
+            throw new Error('User not authenticated');
+        }
+
+        try {
+            const idToken = await auth.currentUser.getIdToken(true); // Get client-side token
+            const response = await fetch('/api/auth/token', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${idToken}`, // Send token to server
+                },
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                console.error(`API request failed: Status ${response.status}, Body: ${errorBody}`);
+                throw new Error('Failed to fetch authentication token');
+            }
+
+            const { token } = await response.json();
+            return token;
+        } catch (error) {
+            console.error('Error getting combined token:', error);
+            throw new Error('Failed to get authentication token');
+        }
+    };
+
     const register = useCallback(
-        async (email: string, password: string, role: UserRole): Promise<void> => {
+        async (email: string, password: string, role: UserRole, name?: string): Promise<void> => {
             setLoading(true);
             setError(null);
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const firebaseUser = userCredential.user;
-                await setToken(firebaseUser);
 
                 await setDoc(doc(db, 'users', firebaseUser.uid), {
-                    email,
                     role,
-                    createdAt: new Date().toISOString()
+                    email,
+                    name: name || '',
+                    createdAt: new Date().toISOString(),
                 });
+
+                await signOut(auth);
+                clearToken();
+                setUser(null);
 
                 showToast('Registration successful! Please login.', 'success');
                 router.push('/auth/login');
@@ -107,7 +151,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         [router, showToast]
     );
 
-    // Login existing user
     const login = useCallback(
         async (email: string, password: string): Promise<void> => {
             setLoading(true);
@@ -115,15 +158,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                await setToken(userCredential.user);
-                const formattedUser = await formatUser(userCredential.user);
+                const firebaseUser = userCredential.user;
+                const token = await setToken(firebaseUser);
+                const formattedUser = await formatUser(firebaseUser);
 
-                if (formattedUser) {
+                if (formattedUser && token) {
                     setUser(formattedUser);
-                    showToast(`Welcome back, ${formattedUser.email}!`, 'success');
+                    showToast(`Welcome back, ${formattedUser.name?.split(' ')[0].toLowerCase().replace(/^\w/, c => c.toUpperCase())}!`, 'success');
                     router.push('/dashboard');
                 } else {
-                    throw new Error('Failed to load user data');
+                    await signOut(auth);
+                    clearToken();
+                    throw new Error('Failed to load user data or token');
                 }
             } catch (err) {
                 const errorMessage = getFirebaseErrorMessage(err);
@@ -137,7 +183,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         [router, showToast]
     );
 
-    // Logout user
     const logout = useCallback(async (): Promise<void> => {
         setLoading(true);
         try {
@@ -150,15 +195,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const errorMessage = getFirebaseErrorMessage(err);
             setError(errorMessage);
             showToast(errorMessage, 'error');
+            throw new Error(errorMessage);
         } finally {
             setLoading(false);
         }
     }, [router, showToast]);
 
-    // Clear errors
     const clearError = useCallback(() => setError(null), []);
 
-    // Auth state listener
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setLoading(true);
@@ -167,11 +211,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const token = await setToken(firebaseUser);
                     const formattedUser = await formatUser(firebaseUser);
 
-                    if (formattedUser) {
+                    if (formattedUser && token) {
                         setUser(formattedUser);
-
-                        // If token exists but we're not on dashboard, redirect
-                        if (token && !router.pathname.startsWith('/dashboard')) {
+                        if (!router.pathname.startsWith('/auth') && !router.pathname.startsWith('/dashboard')) {
                             router.push('/dashboard');
                         }
                     } else {
@@ -180,6 +222,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 } else {
                     clearToken();
                     setUser(null);
+                    if (!router.pathname.startsWith('/auth')) {
+                        router.push('/auth/login');
+                    }
                 }
             } catch (err) {
                 const errorMessage = getFirebaseErrorMessage(err);
@@ -191,7 +236,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         return () => unsubscribe();
-    }, [logout, router]);
+    }, [logout, router, showToast]);
 
     return (
         <AuthContext.Provider
@@ -204,6 +249,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 loading,
                 register,
                 clearError,
+                getCombinedToken,
             }}
         >
             {children}

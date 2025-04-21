@@ -11,6 +11,7 @@ import { useAuth, UserRole } from '@/contexts/AuthContext';
 
 export default function Register() {
     const { showToast } = useToaster();
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [localError, setLocalError] = useState('');
@@ -22,8 +23,14 @@ export default function Register() {
         clearError();
         setLocalError('');
 
+        if (!name.trim()) {
+            setLocalError('Full name is required');
+            showToast('Full name is required', 'error');
+            return;
+        }
+
         try {
-            await register(email, password, role);
+            await register(email, password, role, name);
             showToast('Registration successful! Please login.', 'success');
         } catch (err) {
             const error = err instanceof Error ? err.message : 'Registration failed';
@@ -84,8 +91,20 @@ export default function Register() {
                             <Select role={role} setRole={setRole} />
 
                             <Input
+                                id="name"
+                                icon="text"
+                                name="name"
+                                type="text"
+                                value={name}
+                                label="Full Name"
+                                placeholder="First Last"
+                                onChange={(e) => setName(e.target.value)}
+                            />
+
+                            <Input
                                 id="email"
                                 icon="email"
+                                name="email"
                                 type="email"
                                 value={email}
                                 label="Email Address"
@@ -96,6 +115,7 @@ export default function Register() {
                             <Input
                                 id="password"
                                 icon="password"
+                                name="password"
                                 type="password"
                                 label="Password"
                                 value={password}
@@ -107,13 +127,13 @@ export default function Register() {
                                 type="submit"
                                 disabled={loading}
                                 aria-label="Continue registration"
-                                className="w-full cursor-pointer bg-gradient-to-r from-mp-primary to-mp-muted text-mp-dark font-medium py-3 px-4 rounded-md hover:from-[#e0bb4b]! hover:to-[#f6c834]! transition-all duration-300 flex items-center justify-center"
+                                className="w-full cursor-pointer bg-gradient-to-r from-mp-primary to-mp-muted text-mp-dark font-medium py-3 px-4 rounded-md hover:from-[#e0bb4b] hover:to-[#f6c834] transition-all duration-300 flex items-center justify-center"
                             >
                                 {loading ? (
                                     <Loader size="sm" text="" className="inline" spinnerClass="text-mp-black" />
                                 ) : (
                                     <>
-                                        Continue
+                                        Sign Up
                                         <FaArrowCircleRight className="w-4 h-4 ml-2" />
                                     </>
                                 )}
