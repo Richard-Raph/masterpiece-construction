@@ -39,6 +39,7 @@
 **/serviceAccountKey.json
 **/.firebase/
 **/firebase-debug.log
+src/libs/serviceAccount.json
 
 # Debug logs
 npm-debug.log*

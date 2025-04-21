@@ -20,7 +20,7 @@ interface Product {
     description?: string;
 }
 
-export default function VendorDashboard() {
+export default function Vendor() {
     const router = useRouter();
     const { showToast } = useToaster();
     const [isLoading, setIsLoading] = useState(false);
@@ -36,19 +36,18 @@ export default function VendorDashboard() {
 
     const fetchProducts = useCallback(async () => {
         if (!user) return;
-    
+
         setIsLoadingProducts(true);
         setProductsError(null);
-    
+
         try {
-            const response = await fetch('/api/products', {
+            const response = await fetch(`/api/products?userId=${user.uid}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ userId: user.uid }),
             });
-    
+
             const contentType = response.headers.get('content-type');
             if (!contentType?.includes('application/json')) {
                 const text = await response.text();
@@ -58,9 +57,9 @@ export default function VendorDashboard() {
                         : text.substring(0, 100)
                 );
             }
-    
+
             const data = await response.json();
-    
+
             if (!response.ok) {
                 console.error('Fetch products error:', data);
                 if (['auth/user-not-found', 'auth/not-vendor', 'auth/missing-user-id', 'auth/invalid-user-id'].includes(data.code)) {
@@ -71,7 +70,7 @@ export default function VendorDashboard() {
                 }
                 throw new Error(data.error || 'Failed to fetch products');
             }
-    
+
             setProducts(data.products || []);
         } catch (error) {
             console.error('Fetch products error:', error);

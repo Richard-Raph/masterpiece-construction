@@ -12,10 +12,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         });
     }
 
-    // Authenticate user and ensure they are a vendor
     const result = await authenticate(req, res, 'vendor');
     if (!result) {
-        return; // Response already sent by authenticate
+        return;
     }
 
     const { userId } = result;
