@@ -1,9 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { adminAuth, adminDb } from '@/libs/firebaseAdmin';
 
+// apiMiddleware.ts
 export const authenticate = async (req: NextApiRequest, res: NextApiResponse) => {
     try {
         const authHeader = req.headers.authorization;
+        console.log('Auth header:', authHeader); // Debug
         if (!authHeader?.startsWith('Bearer ')) {
             return res.status(401).json({
                 error: 'Missing authorization header',
@@ -12,11 +14,11 @@ export const authenticate = async (req: NextApiRequest, res: NextApiResponse) =>
         }
 
         const token = authHeader.split(' ')[1];
+        console.log('Token:', token); // Debug
 
-        // Verify the Firebase ID token
         const decodedToken = await adminAuth.verifyIdToken(token);
+        console.log('Decoded token:', decodedToken); // Debug
 
-        // Check if token is expired
         if (new Date() > new Date(decodedToken.exp * 1000)) {
             return res.status(401).json({
                 error: 'Session expired. Please log in again.',
@@ -24,8 +26,8 @@ export const authenticate = async (req: NextApiRequest, res: NextApiResponse) =>
             });
         }
 
-        // Verify user exists in Firestore
         const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
+        console.log('User exists:', userDoc.exists); // Debug
         if (!userDoc.exists) {
             return res.status(404).json({
                 error: 'User not found',

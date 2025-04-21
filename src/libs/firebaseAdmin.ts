@@ -15,11 +15,8 @@ const firebaseAdminConfig = {
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseAdminConfig) : getApps()[0];
-const adminAuth = getAuth(app);
+console.log('Firebase Admin initialized for project:', app.options.projectId);
 const adminDb = getFirestore(app);
+const adminAuth = getAuth(app);
 
-export { adminAuth, adminDb };
-
-export const verifyFirebaseToken = (token: string) => {
-    return adminAuth.verifyIdToken(token);
-};
+export { adminDb, adminAuth };

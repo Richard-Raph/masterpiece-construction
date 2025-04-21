@@ -4,11 +4,11 @@ import Input from '@/components/Input';
 import { useRouter } from 'next/router';
 import Loader from '@/components/Loader';
 import Navbar from '@/components/Navbar';
-import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToaster } from '@/components/Toaster';
 import ProductList from '@/components/ProductList';
 import { FaPlus, FaChartLine } from 'react-icons/fa';
+import { useCallback, useEffect, useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 interface Product {
@@ -16,8 +16,8 @@ interface Product {
     name: string;
     price: number;
     stock: number;
-    description?: string;
     status?: string;
+    description?: string;
 }
 
 export default function VendorDashboard() {
@@ -37,47 +37,60 @@ export default function VendorDashboard() {
     const fetchProducts = useCallback(async () => {
         setIsLoadingProducts(true);
         setProductsError(null);
-    
+
         try {
-            const token = await getCombinedToken();
-            const response = await fetch('/api/products', {
+            let token = await getCombinedToken();
+            let response = await fetch('/api/products', {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
                 },
-                credentials: 'include'
             });
-    
+
+            if (response.status === 401) {
+                // Token might be expired, try refreshing
+                token = await getCombinedToken();
+                response = await fetch('/api/products', {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+            }
+
             const contentType = response.headers.get('content-type');
             if (!contentType?.includes('application/json')) {
                 const text = await response.text();
-                throw new Error(text.includes('<!DOCTYPE html>')
-                    ? 'Server error: Received HTML instead of JSON'
-                    : text.substring(0, 100));
+                throw new Error(
+                    text.includes('<!DOCTYPE html>')
+                        ? 'Server error: Received HTML instead of JSON'
+                        : text.substring(0, 100)
+                );
             }
-    
+
             const data = await response.json();
-    
+
             if (!response.ok) {
-                if (data.code === 'auth/session-expired') {
-                    showToast('Session expired. Please log in again.', 'error');
+                if (['auth/session-expired', 'auth/invalid-token', 'auth/missing-header'].includes(data.code)) {
+                    showToast(data.error || 'Please log in again', 'error');
                     await logout();
                     router.push('/auth/login');
                     return;
                 }
                 throw new Error(data.error || 'Failed to fetch products');
             }
-    
+
             setProducts(data.products || []);
         } catch (error) {
             console.error('Fetch products error:', error);
             setProductsError(
                 error instanceof Error ? error.message : 'Failed to load products'
             );
-            if (error instanceof Error && (
-                error.message.includes('authentication') ||
-                error.message.includes('session expired')
-            )) {
+            if (
+                error instanceof Error &&
+                (error.message.includes('authentication') ||
+                    error.message.includes('session expired'))
+            ) {
                 showToast('Please log in again', 'error');
                 await logout();
                 router.push('/auth/login');
@@ -90,7 +103,6 @@ export default function VendorDashboard() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate inputs
         if (!formData.name.trim() || isNaN(parseFloat(formData.price)) || parseFloat(formData.price) <= 0) {
             showToast('Please enter valid product details (name and positive price)', 'error');
             return;
@@ -104,29 +116,34 @@ export default function VendorDashboard() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     name: formData.name.trim(),
                     price: parseFloat(formData.price),
-                    description: formData.description.trim()
-                })
+                    description: formData.description.trim(),
+                }),
             });
 
-            // Check if response is JSON
             const contentType = response.headers.get('content-type');
             if (!contentType?.includes('application/json')) {
                 const text = await response.text();
-                throw new Error(text.includes('<!DOCTYPE html>')
-                    ? 'Server error: Received HTML instead of JSON'
-                    : text.substring(0, 100));
+                throw new Error(
+                    text.includes('<!DOCTYPE html>')
+                        ? 'Server error: Received HTML instead of JSON'
+                        : text.substring(0, 100)
+                );
             }
 
             const data = await response.json();
 
             if (!response.ok) {
-                if (data.code === 'auth/session-expired') {
-                    showToast('Session expired. Please log in again.', 'error');
+                if (
+                    ['auth/session-expired', 'auth/invalid-token', 'auth/missing-header'].includes(
+                        data.code
+                    )
+                ) {
+                    showToast(data.error || 'Please log in again', 'error');
                     await logout();
                     router.push('/auth/login');
                     return;
@@ -136,19 +153,18 @@ export default function VendorDashboard() {
 
             showToast('Product created successfully!', 'success');
             setFormData({ name: '', price: '', description: '' });
-            await fetchProducts(); // Refresh the list
+            await fetchProducts();
         } catch (error) {
             console.error('Create product error:', error);
             showToast(
                 error instanceof Error ? error.message : 'Failed to create product',
                 'error'
             );
-
-            // If it's an authentication error, redirect to login
-            if (error instanceof Error && (
-                error.message.includes('authentication') ||
-                error.message.includes('session expired')
-            )) {
+            if (
+                error instanceof Error &&
+                (error.message.includes('authentication') ||
+                    error.message.includes('session expired'))
+            ) {
                 await logout();
                 router.push('/auth/login');
             }

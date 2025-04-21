@@ -94,25 +94,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         try {
-            const idToken = await auth.currentUser.getIdToken(true); // Get client-side token
-            const response = await fetch('/api/auth/token', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${idToken}`, // Send token to server
-                },
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.text();
-                console.error(`API request failed: Status ${response.status}, Body: ${errorBody}`);
-                throw new Error('Failed to fetch authentication token');
-            }
-
-            const { token } = await response.json();
-            return token;
+            const idToken = await auth.currentUser.getIdToken(true); // Force refresh
+            return idToken;
         } catch (error) {
-            console.error('Error getting combined token:', error);
+            console.error('Error getting Firebase ID token:', error);
             throw new Error('Failed to get authentication token');
         }
     };
