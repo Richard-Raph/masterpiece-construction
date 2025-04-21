@@ -49,7 +49,7 @@ export default function Home() {
             <Image
               fill
               priority
-              src="/const.webp"
+              src="/hero.webp"
               alt="Construction Team"
               className="object-cover"
             />
