@@ -4,7 +4,7 @@ import { useToaster } from '@/components/Toaster';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { getFirebaseErrorMessage } from '@/libs/firebaseError';
 import { useState, useEffect, useContext, useCallback, createContext, ReactNode } from 'react';
-import { User, signOut, getIdToken, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { User, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
 export type UserRole = 'buyer' | 'vendor' | 'rider';
 
@@ -18,11 +18,9 @@ interface UserData {
 interface AuthContextType {
     loading: boolean;
     error: string | null;
-    token: string | null;
     user: UserData | null;
     clearError: () => void;
     logout: () => Promise<void>;
-    getCombinedToken: () => Promise<string>;
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string, role: UserRole, name?: string) => Promise<void>;
 }
@@ -35,96 +33,85 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<UserData | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [token, setTokenState] = useState<string | null>(null);
 
-    const formatUser = async (firebaseUser: User): Promise<UserData | null> => {
-        if (!firebaseUser?.email) return null;
-
-        try {
-            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-            if (!userDoc.exists()) {
-                console.warn(`User document not found for UID: ${firebaseUser.uid}`);
+    const formatUser = useCallback(
+        async (firebaseUser: User): Promise<UserData | null> => {
+            if (!firebaseUser?.email || !db) {
+                console.warn('formatUser: Missing email or db');
                 return null;
             }
 
-            const data = userDoc.data();
-            if (!data.role || !['buyer', 'vendor', 'rider'].includes(data.role)) {
-                console.warn(`Invalid or missing role for UID: ${firebaseUser.uid}`);
+            try {
+                const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+                console.log('User doc data:', userDoc.data()); // Debug
+                if (!userDoc.exists()) {
+                    console.warn(`User document not found for UID: ${firebaseUser.uid}`);
+                    setError('User profile not found. Please register again.');
+                    showToast('User profile not found. Please register again.', 'error');
+                    return null;
+                }
+
+                const data = userDoc.data();
+                if (!data.role || !['buyer', 'vendor', 'rider'].includes(data.role)) {
+                    console.warn(`Invalid or missing role for UID: ${firebaseUser.uid}`);
+                    setError('Invalid user role. Please contact support.');
+                    showToast('Invalid user role. Please contact support.', 'error');
+                    return null;
+                }
+
+                return {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    role: data.role as UserRole,
+                    name: data.name || undefined,
+                };
+            } catch (err) {
+                console.error('Error formatting user:', err);
+                const errorMessage = getFirebaseErrorMessage(err);
+                setError(errorMessage);
+                showToast(errorMessage, 'error');
                 return null;
             }
-
-            return {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                role: data.role as UserRole,
-                name: data.name || undefined,
-            };
-        } catch (err) {
-            console.error('Error formatting user:', err);
-            setError(getFirebaseErrorMessage(err));
-            return null;
-        }
-    };
-
-    const setToken = async (user: User): Promise<string | null> => {
-        try {
-            const token = await getIdToken(user, true);
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('firebaseToken', token);
-            }
-            setTokenState(token);
-            return token;
-        } catch (err) {
-            console.error('Error getting token:', err);
-            setError(getFirebaseErrorMessage(err));
-            return null;
-        }
-    };
-
-    const clearToken = () => {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('firebaseToken');
-        }
-        setTokenState(null);
-    };
-
-    const getCombinedToken = async (): Promise<string> => {
-        if (!auth.currentUser) {
-            throw new Error('User not authenticated');
-        }
-
-        try {
-            const idToken = await auth.currentUser.getIdToken(true); // Force refresh
-            return idToken;
-        } catch (error) {
-            console.error('Error getting Firebase ID token:', error);
-            throw new Error('Failed to get authentication token');
-        }
-    };
+        },
+        [setError, showToast]
+    );
 
     const register = useCallback(
         async (email: string, password: string, role: UserRole, name?: string): Promise<void> => {
+            if (!auth || !db) {
+                const errorMessage = 'Firebase services not initialized';
+                setError(errorMessage);
+                showToast(errorMessage, 'error');
+                throw new Error(errorMessage);
+            }
+
             setLoading(true);
             setError(null);
 
+            const trimmedEmail = email.trim();
+            console.log('Registering user with email:', trimmedEmail, 'role:', role); // Debug
+
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
                 const firebaseUser = userCredential.user;
 
-                await setDoc(doc(db, 'users', firebaseUser.uid), {
+                const userData = {
                     role,
-                    email,
+                    email: trimmedEmail,
                     name: name || '',
                     createdAt: new Date().toISOString(),
-                });
+                };
+
+                await setDoc(doc(db, 'users', firebaseUser.uid), userData);
+                console.log('User registered with UID:', firebaseUser.uid); // Debug
 
                 await signOut(auth);
-                clearToken();
                 setUser(null);
 
                 showToast('Registration successful! Please login.', 'success');
                 router.push('/auth/login');
             } catch (err) {
+                console.error('Registration error:', err);
                 const errorMessage = getFirebaseErrorMessage(err);
                 setError(errorMessage);
                 showToast(errorMessage, 'error');
@@ -138,25 +125,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const login = useCallback(
         async (email: string, password: string): Promise<void> => {
+            if (!auth || !db) {
+                const errorMessage = 'Firebase services not initialized';
+                setError(errorMessage);
+                showToast(errorMessage, 'error');
+                throw new Error(errorMessage);
+            }
+
+            const trimmedEmail = email.trim();
+            const trimmedPassword = password.trim();
+            console.log('Login attempt with email:', trimmedEmail); // Debug
+
             setLoading(true);
             setError(null);
 
             try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
                 const firebaseUser = userCredential.user;
-                const token = await setToken(firebaseUser);
+                console.log('Login user UID:', firebaseUser.uid); // Debug
                 const formattedUser = await formatUser(firebaseUser);
 
-                if (formattedUser && token) {
+                if (formattedUser) {
                     setUser(formattedUser);
                     showToast(`Welcome back, ${formattedUser.name?.split(' ')[0].toLowerCase().replace(/^\w/, c => c.toUpperCase())}!`, 'success');
                     router.push('/dashboard');
                 } else {
                     await signOut(auth);
-                    clearToken();
-                    throw new Error('Failed to load user data or token');
+                    throw new Error('Failed to load user data');
                 }
             } catch (err) {
+                console.error('Login error:', err);
                 const errorMessage = getFirebaseErrorMessage(err);
                 setError(errorMessage);
                 showToast(errorMessage, 'error');
@@ -165,18 +163,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setLoading(false);
             }
         },
-        [router, showToast]
+        [router, showToast, formatUser]
     );
 
     const logout = useCallback(async (): Promise<void> => {
+        if (!auth) {
+            const errorMessage = 'Firebase auth not initialized';
+            setError(errorMessage);
+            showToast(errorMessage, 'error');
+            throw new Error(errorMessage);
+        }
+
         setLoading(true);
         try {
             await signOut(auth);
-            clearToken();
             setUser(null);
             showToast('Logged out successfully', 'success');
             router.push('/auth/login');
         } catch (err) {
+            console.error('Logout error:', err);
             const errorMessage = getFirebaseErrorMessage(err);
             setError(errorMessage);
             showToast(errorMessage, 'error');
@@ -189,52 +194,73 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const clearError = useCallback(() => setError(null), []);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            setLoading(true);
-            try {
-                if (firebaseUser) {
-                    const token = await setToken(firebaseUser);
-                    const formattedUser = await formatUser(firebaseUser);
+        if (!auth || !db) {
+            console.error('Firebase services not initialized in useEffect');
+            setError('Firebase services not initialized');
+            showToast('Authentication service unavailable. Please try again later.', 'error');
+            setLoading(false);
+            router.push('/auth/login');
+            return;
+        }
 
-                    if (formattedUser && token) {
-                        setUser(formattedUser);
-                        if (!router.pathname.startsWith('/auth') && !router.pathname.startsWith('/dashboard')) {
-                            router.push('/dashboard');
+        console.log('Setting up auth state listener'); // Debug
+        const unsubscribe = onAuthStateChanged(
+            auth,
+            async (firebaseUser) => {
+                setLoading(true);
+                try {
+                    if (firebaseUser) {
+                        console.log('Auth state changed, user:', firebaseUser.uid); // Debug
+                        const formattedUser = await formatUser(firebaseUser);
+                        if (formattedUser) {
+                            setUser(formattedUser);
+                            if (!router.pathname.startsWith('/auth') && !router.pathname.startsWith('/dashboard')) {
+                                router.push('/dashboard');
+                            }
+                        } else {
+                            console.log('No formatted user, logging out'); // Debug
+                            await logout();
                         }
                     } else {
-                        await logout();
+                        console.log('No authenticated user'); // Debug
+                        if (!router.pathname.startsWith('/auth') && router.pathname !== '/') {
+                            router.push('/auth/login');
+                        }
                     }
-                } else {
-                    clearToken();
-                    setUser(null);
-                    if (!router.pathname.startsWith('/auth')) {
-                        router.push('/auth/login');
-                    }
+                } catch (err) {
+                    console.error('Auth state change error:', err);
+                    const errorMessage = getFirebaseErrorMessage(err);
+                    setError(errorMessage);
+                    showToast(errorMessage, 'error');
+                } finally {
+                    setLoading(false);
                 }
-            } catch (err) {
-                const errorMessage = getFirebaseErrorMessage(err);
-                setError(errorMessage);
-                showToast(errorMessage, 'error');
-            } finally {
+            },
+            (error) => {
+                console.error('Auth state listener error:', error);
+                setError('Authentication listener failed');
+                showToast('Authentication service unavailable. Please try again later.', 'error');
                 setLoading(false);
+                router.push('/auth/login');
             }
-        });
+        );
 
-        return () => unsubscribe();
-    }, [logout, router, showToast]);
+        return () => {
+            console.log('Cleaning up auth state listener'); // Debug
+            unsubscribe();
+        };
+    }, [logout, router, showToast, formatUser]);
 
     return (
         <AuthContext.Provider
             value={{
                 user,
                 error,
-                token,
                 login,
                 logout,
                 loading,
                 register,
                 clearError,
-                getCombinedToken,
             }}
         >
             {children}

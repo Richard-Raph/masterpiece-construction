@@ -1,64 +1,53 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { adminAuth, adminDb } from '@/libs/firebaseAdmin';
+import { adminDb } from '@/libs/firebaseAdmin';
 
-// apiMiddleware.ts
-export const authenticate = async (req: NextApiRequest, res: NextApiResponse) => {
+export const authenticate = async (req: NextApiRequest, res: NextApiResponse, requiredRole: string = 'vendor') => {
     try {
-        const authHeader = req.headers.authorization;
-        console.log('Auth header:', authHeader); // Debug
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({
-                error: 'Missing authorization header',
-                code: 'auth/missing-header',
+        const userId = (req.query.userId || req.body.userId)?.toString();
+        if (!userId || typeof userId !== 'string' || !/^[a-zA-Z0-9]{20,28}$/.test(userId)) {
+            res.status(401).json({
+                error: 'Invalid or missing user ID',
+                code: 'auth/invalid-user-id',
             });
+            return null;
         }
 
-        const token = authHeader.split(' ')[1];
-        console.log('Token:', token); // Debug
-
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        console.log('Decoded token:', decodedToken); // Debug
-
-        if (new Date() > new Date(decodedToken.exp * 1000)) {
-            return res.status(401).json({
-                error: 'Session expired. Please log in again.',
-                code: 'auth/session-expired',
-            });
-        }
-
-        const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
-        console.log('User exists:', userDoc.exists); // Debug
+        const userDoc = await adminDb.collection('users').doc(userId).get();
         if (!userDoc.exists) {
-            return res.status(404).json({
+            res.status(404).json({
                 error: 'User not found',
                 code: 'auth/user-not-found',
             });
+            return null;
+        }
+
+        const userData = userDoc.data();
+        if (!userData) {
+            res.status(404).json({
+                error: 'User data not found',
+                code: 'auth/no-user-data',
+            });
+            return null;
+        }
+
+        if (userData.role !== requiredRole) {
+            res.status(403).json({
+                error: `Only ${requiredRole}s can access this resource`,
+                code: `auth/not-${requiredRole}`,
+            });
+            return null;
         }
 
         return {
-            userId: decodedToken.uid,
-            userData: userDoc.data(),
+            userId,
+            userData,
         };
     } catch (error) {
         console.error('Authentication error:', error);
-
-        // Handle specific Firebase errors
-        if (error instanceof Error && error.message.includes('Firebase ID token has expired')) {
-            return res.status(401).json({
-                error: 'Session expired. Please log in again.',
-                code: 'auth/session-expired',
-            });
-        } else if (error instanceof Error && error.message.includes('invalid token')) {
-            return res.status(401).json({
-                error: 'Invalid authentication token',
-                code: 'auth/invalid-token',
-            });
-        }
-
-        // Generic error
-        return res.status(500).json({
+        res.status(500).json({
             error: 'Authentication failed. Please try again.',
             code: 'auth/failed',
         });
+        return null;
     }
 };

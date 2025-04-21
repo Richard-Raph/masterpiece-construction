@@ -1,7 +1,7 @@
-import { allowCors } from '@/libs/cors';
+import { NextApiRequest, NextApiResponse } from 'next';
 import { adminDb } from '@/libs/firebaseAdmin';
 import { authenticate } from '@/libs/apiMiddleware';
-import { NextApiRequest, NextApiResponse } from 'next';
+import { allowCors } from '@/libs/cors';
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -12,15 +12,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         });
     }
 
+    // Authenticate user and ensure they are a vendor
+    const result = await authenticate(req, res, 'vendor');
+    if (!result) {
+        return; // Response already sent by authenticate
+    }
+
+    const { userId } = result;
+
     try {
-        const result = await authenticate(req, res);
-        if (!result) {
-            return; // Response already sent by authenticate
-        }
-
-        const { userId } = result;
-
-        const snapshot = await adminDb.collection('products')
+        const snapshot = await adminDb
+            .collection('products')
             .where('vendorId', '==', userId)
             .get();
 
@@ -37,7 +39,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     } catch (error) {
         console.error('Error fetching products:', error);
         return res.status(500).json({
-            error: 'Internal server error',
+            error: 'Failed to fetch products',
             code: 'internal-error',
         });
     }

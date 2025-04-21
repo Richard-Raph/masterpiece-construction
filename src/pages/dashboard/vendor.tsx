@@ -27,37 +27,28 @@ export default function VendorDashboard() {
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoadingProducts, setIsLoadingProducts] = useState(false);
     const [productsError, setProductsError] = useState<string | null>(null);
-    const { user, loading: authLoading, getCombinedToken, logout } = useAuth();
+    const { user, loading: authLoading, logout } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         price: '',
-        description: ''
+        description: '',
     });
 
     const fetchProducts = useCallback(async () => {
+        if (!user) return;
+    
         setIsLoadingProducts(true);
         setProductsError(null);
-
+    
         try {
-            let token = await getCombinedToken();
-            let response = await fetch('/api/products', {
+            const response = await fetch('/api/products', {
+                method: 'GET',
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({ userId: user.uid }),
             });
-
-            if (response.status === 401) {
-                // Token might be expired, try refreshing
-                token = await getCombinedToken();
-                response = await fetch('/api/products', {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
-            }
-
+    
             const contentType = response.headers.get('content-type');
             if (!contentType?.includes('application/json')) {
                 const text = await response.text();
@@ -67,60 +58,62 @@ export default function VendorDashboard() {
                         : text.substring(0, 100)
                 );
             }
-
+    
             const data = await response.json();
-
+    
             if (!response.ok) {
-                if (['auth/session-expired', 'auth/invalid-token', 'auth/missing-header'].includes(data.code)) {
-                    showToast(data.error || 'Please log in again', 'error');
+                console.error('Fetch products error:', data);
+                if (['auth/user-not-found', 'auth/not-vendor', 'auth/missing-user-id', 'auth/invalid-user-id'].includes(data.code)) {
+                    showToast(data.error || 'Access denied. Please log in again.', 'error');
                     await logout();
                     router.push('/auth/login');
                     return;
                 }
                 throw new Error(data.error || 'Failed to fetch products');
             }
-
+    
             setProducts(data.products || []);
         } catch (error) {
             console.error('Fetch products error:', error);
             setProductsError(
                 error instanceof Error ? error.message : 'Failed to load products'
             );
-            if (
-                error instanceof Error &&
-                (error.message.includes('authentication') ||
-                    error.message.includes('session expired'))
-            ) {
-                showToast('Please log in again', 'error');
-                await logout();
-                router.push('/auth/login');
-            }
+            showToast(
+                error instanceof Error ? error.message : 'Failed to load products',
+                'error'
+            );
         } finally {
             setIsLoadingProducts(false);
         }
-    }, [getCombinedToken, logout, router, showToast]);
+    }, [user, logout, router, showToast]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.name.trim() || isNaN(parseFloat(formData.price)) || parseFloat(formData.price) <= 0) {
-            showToast('Please enter valid product details (name and positive price)', 'error');
+        if (!user) {
+            showToast('User not authenticated', 'error');
+            return;
+        }
+
+        const name = formData.name.trim();
+        const price = parseFloat(formData.price);
+        if (!name || name.length < 2 || isNaN(price) || price <= 0) {
+            showToast('Please enter a valid product name (2+ characters) and price (>0)', 'error');
             return;
         }
 
         setIsLoading(true);
 
         try {
-            const token = await getCombinedToken();
             const response = await fetch('/api/products/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    name: formData.name.trim(),
-                    price: parseFloat(formData.price),
+                    userId: user.uid,
+                    name,
+                    price,
                     description: formData.description.trim(),
                 }),
             });
@@ -138,12 +131,9 @@ export default function VendorDashboard() {
             const data = await response.json();
 
             if (!response.ok) {
-                if (
-                    ['auth/session-expired', 'auth/invalid-token', 'auth/missing-header'].includes(
-                        data.code
-                    )
-                ) {
-                    showToast(data.error || 'Please log in again', 'error');
+                console.error('Create product error:', data);
+                if (['auth/user-not-found', 'auth/not-vendor', 'auth/missing-user-id', 'auth/invalid-user-id'].includes(data.code)) {
+                    showToast(data.error || 'Access denied. Please log in again.', 'error');
                     await logout();
                     router.push('/auth/login');
                     return;
@@ -160,14 +150,6 @@ export default function VendorDashboard() {
                 error instanceof Error ? error.message : 'Failed to create product',
                 'error'
             );
-            if (
-                error instanceof Error &&
-                (error.message.includes('authentication') ||
-                    error.message.includes('session expired'))
-            ) {
-                await logout();
-                router.push('/auth/login');
-            }
         } finally {
             setIsLoading(false);
         }
@@ -202,7 +184,6 @@ export default function VendorDashboard() {
             <section className="min-h-screen bg-mp-light">
                 <Navbar />
                 <div className="max-w-7xl mx-auto p-4 md:p-6">
-                    {/* Header Section */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-bold text-mp-dark">Welcome Vendor</h1>
@@ -215,7 +196,6 @@ export default function VendorDashboard() {
                         </div>
                     </div>
 
-                    {/* Stats Cards */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                         <div className="bg-white p-6 rounded-xl shadow-md border border-mp-light">
                             <h3 className="text-mp-gray mb-2">Total Products</h3>
@@ -231,9 +211,7 @@ export default function VendorDashboard() {
                         </div>
                     </div>
 
-                    {/* Main Content */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Add Product Form */}
                         <div className="bg-white p-6 rounded-xl shadow-md border border-mp-light">
                             <div className="flex items-center mb-6">
                                 <FaPlus className="text-2xl text-mp-primary mr-3" />
@@ -253,8 +231,6 @@ export default function VendorDashboard() {
                                 />
 
                                 <Input
-                                    // min="0.01"
-                                    // step="0.01"
                                     name="price"
                                     type="number"
                                     id="productPrice"

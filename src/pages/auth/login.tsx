@@ -100,7 +100,7 @@ export default function Login() {
                                     <input
                                         id="remember"
                                         type="checkbox"
-                                        className="h-4 w-4 text-mp-primary focus:ring-mp-primary border-gray-300 rounded"
+                                        className="h-4 w-4 text-mp-primary focus:ring-[#f6c834] border-gray-300 rounded"
                                     />
                                     <label htmlFor="remember" className="ml-2 block text-sm text-mp-gray">
                                         Remember me
