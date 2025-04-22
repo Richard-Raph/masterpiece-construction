@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 export const allowCors = (handler: (req: NextApiRequest, res: NextApiResponse) => Promise<void>) => {
     return async (req: NextApiRequest, res: NextApiResponse) => {
         const allowedOrigins = process.env.NODE_ENV === 'production'
-            ? ['http://localhost:3000']
+            ? ['https://masterpiece-construction.onrender.com']
             : ['*'];
 
         const origin = req.headers.origin;
