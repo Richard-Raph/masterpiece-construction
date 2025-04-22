@@ -10,7 +10,7 @@ interface InputProps {
     value: string;
     textarea?: boolean;
     placeholder: string;
-    onClick: (e: React.MouseEvent<HTMLInputElement>) => void;
+    onClick?: (e: React.MouseEvent<HTMLInputElement>) => void;
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     icon?: 'text' | 'email' | 'password' | 'productName' | 'productPrice' | 'productDescription';
 }
